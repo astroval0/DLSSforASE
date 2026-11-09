@@ -1,0 +1,10 @@
+Astro's DLSS for ASE
+Copyright (c) 2026 AstroVal0
+https://github.com/astroval0/astros-dlss-for-ase
+
+If you use, fork or redistribute this project or any code from it, keep this
+NOTICE file and credit "AstroVal0's DLSS for ASE" with a link to the repo.
+
+Third party stuff:
+- MinHook, Copyright (C) 2009-2017 Tsuda Kageyu. BSD 2-Clause license.
+- NVIDIA DLSS SDK (third_party/dlss/NVIDIA-LICENSE.txt)
