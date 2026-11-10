@@ -6,6 +6,8 @@
 #include <windows.h>
 #include <string>
 
+#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 namespace {
 
     constexpr int IdLaunch = 101;
@@ -71,9 +73,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
 
     RegisterClassW(&windowClass);
 
-    HWND window = CreateWindowW(windowClass.lpszClassName, L"DLSSforASE v" DLSSFORASE_VERSION_W,
-        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
-        470, 270, nullptr, nullptr, instance, nullptr);
+    HWND window = CreateWindowW(windowClass.lpszClassName, L"Astro's DLSS for ASE v" DLSSFORASE_VERSION_W,
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 470, 200,
+        nullptr, nullptr, instance, nullptr);
 
     ShowWindow(window, showCommand);
 
