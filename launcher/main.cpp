@@ -33,7 +33,9 @@ namespace {
         std::wstring text;
 
         if (pid) {
-            text += std::format(L"ARK is running (pid {}).", pid);
+            text += std::format(L"ARK is running (pid {}).\n", pid);
+            std::wstring battleye = FindBattleye(pid);
+            text += battleye.empty() ? L"BattlEye: not running" : std::format(L"BattlEye: running ({})", battleye);
         } else {
             text += L"ARK is not running.";
         }

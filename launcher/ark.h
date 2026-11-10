@@ -9,3 +9,5 @@ bool LaunchArkWithoutBattlEye(std::wstring& error);
 
 // returns 0 if nothing found
 DWORD FindArkProcess();
+
+std::wstring FindBattleye(DWORD arkPid);

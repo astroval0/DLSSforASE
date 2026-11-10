@@ -39,6 +39,14 @@ DWORD FindArkProcess() {
     return FindProcess(L"ShooterGame.exe");
 }
 
+std::wstring FindBattleye(DWORD arkPid) {
+    if (FindProcess(L"ShooterGame_BE.exe")) {
+        return L"ShooterGame_BE.exe is running";
+    }
+
+    return {};
+}
+
 bool LaunchArkWithoutBattlEye(std::wstring& error) {
     HINSTANCE result = ShellExecuteW(nullptr, L"open", ArkNoBattlEyeLaunchUri, nullptr, nullptr, SW_SHOWNORMAL);
 
