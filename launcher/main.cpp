@@ -1,14 +1,24 @@
 // Astro's DLSS for ASE - https://github.com/astroval0/astros-dlss-for-ase
 // Copyright (c) 2026 AstroVal0. Licensed under Apache-2.0, see LICENSE and NOTICE.
 
+#include "ark.h"
 #include "version.h"
 #include <windows.h>
+#include <string>
 
 namespace {
     LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
-        if (message == WM_DESTROY) {
-            PostQuitMessage(0);
-            return 0;
+        switch (message) {
+            case WM_CREATE: {
+                std::filesystem::path arkDir = FindArkInstall();
+                std::wstring status = arkDir.empty() ? L"cannot find ark. do you have it installed through steam?" : L"ARK: " + arkDir.native();
+
+                CreateWindowW(L"STATIC", status.c_str(), WS_CHILD | WS_VISIBLE, 16, 12, 420, 84, window, nullptr, nullptr, nullptr);
+                return 0;
+            }
+            case WM_DESTROY:
+                PostQuitMessage(0);
+                return 0;
         }
 
         return DefWindowProcW(window, message, wParam, lParam);
@@ -18,7 +28,7 @@ namespace {
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
     WNDCLASSW windowClass = {};
 
-    windowClass.lpfnWndProc = WindowProc;
+    windowClass.lpfnWndProc = DefWindowProcW;
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
