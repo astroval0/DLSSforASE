@@ -1,4 +1,4 @@
-// Astro's DLSS for ASE - https://github.com/astroval0/astros-dlss-for-ase
+// Astro's DLSSforASE - https://github.com/astroval0/DLSSforASE
 // Copyright (c) 2026 AstroVal0. Licensed under Apache-2.0, see LICENSE and NOTICE.
 
 #include "ark.h"
@@ -32,11 +32,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
-    windowClass.lpszClassName = L"AstroDLSSLauncher";
+    windowClass.lpszClassName = L"DLSSforASELauncher";
 
     RegisterClassW(&windowClass);
 
-    HWND window = CreateWindowW(windowClass.lpszClassName, L"Astro's DLSS for ASE v" ASTRO_DLSS_VERSION_W,
+    HWND window = CreateWindowW(windowClass.lpszClassName, L"DLSSforASE v" DLSSFORASE_VERSION_W,
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
         470, 270, nullptr, nullptr, instance, nullptr);
 

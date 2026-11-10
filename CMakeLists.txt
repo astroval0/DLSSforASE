@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 4.1)
 
 set(CMAKE_TOOLCHAIN_FILE $ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
-project(astrosdlssforase VERSION 0.1.0 LANGUAGES CXX)
+project(DLSSforASE VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -14,6 +14,6 @@ configure_file(cmake/version.h.in ${CMAKE_BINARY_DIR}/generated/version.h)
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
 #todo make me recurse
-add_executable(astrosdlssforase WIN32 launcher/ark.cpp launcher/main.cpp)
+add_executable(DLSSforASE WIN32 launcher/ark.cpp launcher/main.cpp)
 
-target_link_libraries(astrosdlssforase PRIVATE WIL::WIL)
+target_link_libraries(DLSSforASE PRIVATE WIL::WIL)
