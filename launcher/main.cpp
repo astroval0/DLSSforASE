@@ -1,6 +1,9 @@
 // Astro's DLSSforASE - https://github.com/astroval0/DLSSforASE
 // Copyright (c) 2026 AstroVal0. Licensed under Apache-2.0, see LICENSE and NOTICE.
 
+#include <format>
+#include <future>
+
 #include "ark.h"
 #include "version.h"
 #include <windows.h>
@@ -11,14 +14,40 @@
 namespace {
 
     constexpr int IdLaunch = 101;
+    constexpr UINT_PTR StatusTimer = 1;
 
     HFONT GFont = nullptr;
+
+    HWND GStatusText = nullptr;
+    HWND GLaunchButton = nullptr;
 
     HWND AddControl(HWND parent, const wchar_t* type, const wchar_t* text, DWORD style, int x, int y, int width, int height, int id) {
         HWND control = CreateWindowW(type, text, WS_CHILD | WS_VISIBLE | style, x, y, width, height, parent, reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)), nullptr, nullptr);
 
         SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(GFont), TRUE);
         return control;
+    }
+
+    void RefreshStatus() {
+        DWORD pid = FindArkProcess();
+        std::wstring text;
+
+        if (pid) {
+            text += std::format(L"ARK is running (pid {}).", pid);
+        } else {
+            text += L"ARK is not running.";
+        }
+
+        //cache the status so it doesnt flicker
+        static std::wstring shown;
+
+        if (text != shown) {
+            shown = text;
+
+            SetWindowTextW(GStatusText, text.c_str());
+        }
+
+        EnableWindow(GLaunchButton, !pid);
     }
 
     void OnLaunch(HWND window) {
@@ -39,10 +68,15 @@ namespace {
                 SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0);
                 GFont = CreateFontIndirectW(&metrics.lfMessageFont);
 
-                HWND launch = AddControl(window, L"BUTTON", L"Launch ARK (no BattlEye)", BS_PUSHBUTTON, 16, 104, 200, 32, IdLaunch);
+                GStatusText = AddControl(window, L"STATIC", L"", 0, 16, 12, 420, 84, 0);
+                GLaunchButton = AddControl(window, L"BUTTON", L"Launch ARK (no BattlEye)", BS_PUSHBUTTON, 16, 104, 200, 32, IdLaunch);
+                SetTimer(window, StatusTimer, 1000, nullptr);
+                RefreshStatus();
 
-                EnableWindow(launch, true);
-
+                return 0;
+            }
+            case WM_TIMER: {
+                RefreshStatus();
                 return 0;
             }
             case WM_COMMAND: {

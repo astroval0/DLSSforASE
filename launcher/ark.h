@@ -3,5 +3,9 @@
 #pragma once
 
 #include <string>
+#include <windows.h>
 
 bool LaunchArkWithoutBattlEye(std::wstring& error);
+
+// returns 0 if nothing found
+DWORD FindArkProcess();
