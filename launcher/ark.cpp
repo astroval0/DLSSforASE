@@ -50,7 +50,7 @@ namespace {
 }
 
 std::filesystem::path FindArkInstall() {
-    if (std::optional<std::wstring> uninstall = wil::reg::try_get_value_string(HKEY_LOCAL_MACHINE, L"Computer\\HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 346110", L"InstallLocation")) {
+    if (std::optional<std::wstring> uninstall = wil::reg::try_get_value_string(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 346110", L"InstallLocation")) {
         return *uninstall;
     }
 
