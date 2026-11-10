@@ -10,10 +10,19 @@ namespace {
     LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
         switch (message) {
             case WM_CREATE: {
+                NONCLIENTMETRICSW metrics = {
+                    sizeof(metrics)
+                };
+
+                SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0);
+                HFONT font = CreateFontIndirectW(&metrics.lfMessageFont);
+
                 std::filesystem::path arkDir = FindArkInstall();
                 std::wstring status = arkDir.empty() ? L"cannot find ark. do you have it installed through steam?" : L"ARK: " + arkDir.native();
 
-                CreateWindowW(L"STATIC", status.c_str(), WS_CHILD | WS_VISIBLE, 16, 12, 420, 84, window, nullptr, nullptr, nullptr);
+                HWND label = CreateWindowW(L"STATIC", status.c_str(), WS_CHILD | WS_VISIBLE, 16, 12, 420, 84, window, nullptr, nullptr, nullptr);
+                SendMessageW(label, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
+
                 return 0;
             }
             case WM_DESTROY:
@@ -28,7 +37,7 @@ namespace {
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
     WNDCLASSW windowClass = {};
 
-    windowClass.lpfnWndProc = DefWindowProcW;
+    windowClass.lpfnWndProc = WindowProc;
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);

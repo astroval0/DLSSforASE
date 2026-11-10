@@ -8,3 +8,5 @@ NOTICE file and credit "AstroVal0's DLSSforASE" with a link to the repo.
 Third party stuff:
 - MinHook, Copyright (C) 2009-2017 Tsuda Kageyu. BSD 2-Clause license.
 - NVIDIA DLSS SDK (third_party/dlss/NVIDIA-LICENSE.txt)
+- WIL (Windows Implementation Libraries), Copyright (c) Microsoft Corporation. MIT license.
+- ValveFileVDF, Copyright (c) Matthias Moeller. MIT license.
