@@ -14,7 +14,7 @@ configure_file(cmake/version.h.in ${CMAKE_BINARY_DIR}/generated/version.h)
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
 #todo make me recurse
-add_executable(DLSSforASE WIN32 launcher/ark.cpp launcher/main.cpp)
+add_executable(DLSSforASE WIN32 launcher/ark.cpp launcher/main.cpp launcher/inject.cpp)
 
 target_link_libraries(DLSSforASE PRIVATE WIL::WIL)
 
@@ -22,3 +22,4 @@ target_link_libraries(DLSSforASE PRIVATE WIL::WIL)
 add_library(DLSSforASE_Mod SHARED mod/dllmain.cpp)
 set_target_properties(DLSSforASE_Mod PROPERTIES OUTPUT_NAME dlss_for_ase)
 target_include_directories(DLSSforASE_Mod PRIVATE mod)
+add_dependencies(DLSSforASE DLSSforASE_Mod)

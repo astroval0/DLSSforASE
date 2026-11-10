@@ -8,6 +8,7 @@
 #include <tlhelp32.h>
 #include <wil/resource.h>
 #include <format>
+#include <fstream>
 
 namespace {
     // 346110 is ARK, option/1 is entry 1 in its steam launch config which launches without battleye.
@@ -45,6 +46,37 @@ std::wstring FindBattleye(DWORD arkPid) {
     }
 
     return {};
+}
+
+uint32_t ReadArkBuild(DWORD arkPid) {
+    wil::unique_handle process{OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, arkPid)};
+
+    if (!process) {
+        return 0;
+    }
+
+    wchar_t exePath[MAX_PATH];
+    DWORD length = MAX_PATH;
+
+    if (!QueryFullProcessImageNameW(process.get(), 0, exePath, &length)) {
+        return 0;
+    }
+
+    std::ifstream exe(exePath, std::ios::binary);
+    IMAGE_DOS_HEADER dos = {};
+    IMAGE_NT_HEADERS64 nt = {};
+
+    if (!exe.read(reinterpret_cast<char*>(&dos), sizeof(dos)) || dos.e_magic != IMAGE_DOS_SIGNATURE) {
+        return 0;
+    }
+
+    exe.seekg(dos.e_lfanew);
+
+    if (!exe.read(reinterpret_cast<char*>(&nt), sizeof(nt)) || nt.Signature != IMAGE_NT_SIGNATURE) {
+        return 0;
+    }
+
+    return nt.FileHeader.TimeDateStamp;
 }
 
 bool LaunchArkWithoutBattlEye(std::wstring& error) {

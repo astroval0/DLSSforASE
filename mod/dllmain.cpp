@@ -9,18 +9,18 @@ namespace {
 
         return 0;
     }
+}
 
-    BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
-        if (reason == DLL_PROCESS_ATTACH) {
-            DisableThreadLibraryCalls(module);
+BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
+    if (reason == DLL_PROCESS_ATTACH) {
+        DisableThreadLibraryCalls(module);
 
-            HANDLE thread = CreateThread(nullptr, 0, Worker, nullptr, 0, nullptr);
+        HANDLE thread = CreateThread(nullptr, 0, Worker, nullptr, 0, nullptr);
 
-            if (thread) {
-                CloseHandle(thread);
-            }
-
-            return TRUE;
+        if (thread) {
+            CloseHandle(thread);
         }
     }
+
+    return TRUE;
 }
