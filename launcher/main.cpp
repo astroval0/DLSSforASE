@@ -7,6 +7,26 @@
 #include <string>
 
 namespace {
+
+    constexpr int IdLaunch = 101;
+
+    HFONT GFont = nullptr;
+
+    HWND AddControl(HWND parent, const wchar_t* type, const wchar_t* text, DWORD style, int x, int y, int width, int height, int id) {
+        HWND control = CreateWindowW(type, text, WS_CHILD | WS_VISIBLE | style, x, y, width, height, parent, reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)), nullptr, nullptr);
+
+        SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(GFont), TRUE);
+        return control;
+    }
+
+    void OnLaunch(HWND window) {
+        std::wstring error;
+
+        if (!LaunchArkWithoutBattlEye(error)) {
+            MessageBoxW(window, error.c_str(), L"Astro's DLSSforASE", MB_ICONERROR);
+        }
+    }
+
     LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
         switch (message) {
             case WM_CREATE: {
@@ -15,19 +35,25 @@ namespace {
                 };
 
                 SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0);
-                HFONT font = CreateFontIndirectW(&metrics.lfMessageFont);
+                GFont = CreateFontIndirectW(&metrics.lfMessageFont);
 
-                std::filesystem::path arkDir = FindArkInstall();
-                std::wstring status = arkDir.empty() ? L"cannot find ark. do you have it installed through steam?" : L"ARK: " + arkDir.native();
+                HWND launch = AddControl(window, L"BUTTON", L"Launch ARK (no BattlEye)", BS_PUSHBUTTON, 16, 104, 200, 32, IdLaunch);
 
-                HWND label = CreateWindowW(L"STATIC", status.c_str(), WS_CHILD | WS_VISIBLE, 16, 12, 420, 84, window, nullptr, nullptr, nullptr);
-                SendMessageW(label, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
+                EnableWindow(launch, true);
 
                 return 0;
             }
-            case WM_DESTROY:
+            case WM_COMMAND: {
+                if (LOWORD(wParam) == IdLaunch) {
+                    OnLaunch(window);
+                }
+
+                return 0;
+            }
+            case WM_DESTROY: {
                 PostQuitMessage(0);
                 return 0;
+            }
         }
 
         return DefWindowProcW(window, message, wParam, lParam);
