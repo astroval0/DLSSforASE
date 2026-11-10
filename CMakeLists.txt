@@ -17,3 +17,8 @@ include_directories(${CMAKE_BINARY_DIR}/generated)
 add_executable(DLSSforASE WIN32 launcher/ark.cpp launcher/main.cpp)
 
 target_link_libraries(DLSSforASE PRIVATE WIL::WIL)
+
+# dll side of things
+add_library(DLSSforASE_Mod SHARED mod/dllmain.cpp)
+set_target_properties(DLSSforASE_Mod PROPERTIES OUTPUT_NAME dlss_for_ase)
+target_include_directories(DLSSforASE_Mod PRIVATE mod)
