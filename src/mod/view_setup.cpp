@@ -6,6 +6,7 @@
 
 #include "hooks.h"
 #include "offsets.h"
+#include "rhi_command.h"
 
 namespace {
     //todo: find the real types ya dickhead
@@ -19,6 +20,10 @@ namespace {
 
         if (++GFrames % 600 == 0) {
             spdlog::info("{} frames", GFrames);
+
+            LoadRhiWork(cmdlist, [frame = GFrames] {
+                spdlog::info("rhi: work for frame {} ran", frame);
+            });
         }
     }
 }

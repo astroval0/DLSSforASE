@@ -21,6 +21,9 @@ namespace offset {
     // FD3D11DynamicRHI
     constexpr size_t D3D11RHI_IMContext = 0x90;
     constexpr size_t D3D11RHI_Device = 0x98;
+    // FRHICommandBase
+    constexpr size_t RHICommandList_CommandLink = 0x10;
+    constexpr size_t RHICommandList_NumCommands = 0x1C;
 }
 
 template <typename T> T& Field(const void* object, size_t offset) {
