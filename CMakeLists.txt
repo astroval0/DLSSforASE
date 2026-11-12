@@ -16,12 +16,12 @@ find_package(wil CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 configure_file(cmake/version.h.in ${CMAKE_BINARY_DIR}/generated/version.h)
-include_directories(${CMAKE_BINARY_DIR}/generated)
+include_directories(${CMAKE_BINARY_DIR}/generated common)
 
 #todo make me recurse
 add_executable(DLSSforASE WIN32 launcher/ark.cpp launcher/main.cpp launcher/inject.cpp)
 
-target_link_libraries(DLSSforASE PRIVATE WIL::WIL)
+target_link_libraries(DLSSforASE PRIVATE WIL::WIL spdlog::spdlog)
 
 # dll side of things
 add_library(DLSSforASE_Mod SHARED mod/dllmain.cpp)
