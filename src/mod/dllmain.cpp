@@ -5,12 +5,17 @@
 #include <windows.h>
 #include <spdlog/spdlog.h>
 #include "launcher_log.h"
-#include <filesystem>
+
+#include "hooks.h"
 
 namespace {
     DWORD WINAPI Worker(LPVOID) {
         UseLauncherLog("mod");
         spdlog::info("DLSSforASE {} loaded into pid {}", DLSSFORASE_VERSION, GetCurrentProcessId());
+
+        if (!InstallHooks()) {
+            spdlog::error("hooking failed :(");
+        }
 
         return 0;
     }

@@ -26,7 +26,8 @@ target_link_libraries(DLSSforASE PRIVATE WIL::WIL spdlog::spdlog)
 
 # dll side of things
 add_library(DLSSforASE_Mod SHARED src/mod/dllmain.cpp
-        src/mod/hooks.cpp)
+        src/mod/hooks.cpp
+        src/mod/view_setup.cpp)
 set_target_properties(DLSSforASE_Mod PROPERTIES OUTPUT_NAME dlss_for_ase)
 target_include_directories(DLSSforASE_Mod PRIVATE src/mod)
 target_link_libraries(DLSSforASE_Mod PRIVATE spdlog::spdlog minhook::minhook)

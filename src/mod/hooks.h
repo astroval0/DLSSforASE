@@ -6,4 +6,5 @@
 #include <cstdint>
 
 bool CreateHook(const char* name, uintptr_t rva, void* detour, void** original);
+bool HookViewSetup();
 bool InstallHooks();

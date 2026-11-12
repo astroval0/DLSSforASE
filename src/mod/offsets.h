@@ -2,8 +2,14 @@
 // Copyright (c) 2026 AstroVal0. Licensed under Apache-2.0, see LICENSE and NOTICE.
 
 #pragma once
-#include <cstdint>
+
 #include <windows.h>
+
+// these r only valid for ShooterGame.exe header timestamp 0x6949AAAEu
+
+namespace rva {
+    constexpr uintptr_t PreVisibilityFrameSetup = 0x039186A0;
+}
 
 template <typename T> T* AtRva(uintptr_t rva) {
     //windows stinks so we have to convert HMODULE to uintptr_t then we can add our relative virtual address
