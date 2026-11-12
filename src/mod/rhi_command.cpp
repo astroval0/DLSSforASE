@@ -25,7 +25,7 @@ void LoadRhiWork(void *cmdList, std::function<void()> work) {
     command->Execute = &ExecuteRhiCommand;
     command->Work = std::move(work);
 
-    RhiCommand**& link = Field<RhiCommand**>(cmdList, offset::RHICommandList_CommandLink);
+    auto& link = Field<RhiCommand**>(cmdList, offset::RHICommandList_CommandLink);
 
     *link = command;
     link = &command->Next;
