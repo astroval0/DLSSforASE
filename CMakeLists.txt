@@ -40,19 +40,14 @@ set_target_properties(ngx PROPERTIES
 configure_file(cmake/version.h.in ${CMAKE_BINARY_DIR}/generated/version.h)
 include_directories(${CMAKE_BINARY_DIR}/generated src/common)
 
-#todo make me recurse
-add_executable(DLSSforASE WIN32 src/launcher/ark.cpp src/launcher/main.cpp src/launcher/inject.cpp)
+file(GLOB_RECURSE LAUNCHER_SOURCES CONFIGURE_DEPENDS src/launcher/*.cpp)
+add_executable(DLSSforASE WIN32 ${LAUNCHER_SOURCES})
 
 target_link_libraries(DLSSforASE PRIVATE WIL::WIL spdlog::spdlog)
 
 # dll side of things
-add_library(DLSSforASE_Mod SHARED src/mod/dllmain.cpp
-        src/mod/hooks.cpp
-        src/mod/view_setup.cpp
-        src/mod/rhi.cpp
-        src/mod/dlss.cpp
-        src/mod/rhi_command.cpp
-)
+file(GLOB_RECURSE MOD_SOURCES CONFIGURE_DEPENDS src/mod/*.cpp)
+add_library(DLSSforASE_Mod SHARED ${MOD_SOURCES})
 set_target_properties(DLSSforASE_Mod PROPERTIES OUTPUT_NAME dlss_for_ase)
 target_include_directories(DLSSforASE_Mod PRIVATE src/mod)
 target_link_libraries(DLSSforASE_Mod PRIVATE spdlog::spdlog minhook::minhook ngx d3d11)

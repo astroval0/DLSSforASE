@@ -13,6 +13,7 @@ namespace {
         std::function<void()> Work;
     };
 
+    // the executor reads Next before calling this, so deleting self here is bueno
     void ExecuteRhiCommand(void*, RhiCommand* self) {
         self->Work();
         delete self;
