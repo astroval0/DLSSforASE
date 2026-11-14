@@ -10,6 +10,8 @@
 namespace rva {
     constexpr uintptr_t PreVisibilityFrameSetup = 0x039186A0;
     constexpr uintptr_t GDynamicRHI = 0x04B8D268;
+    constexpr uintptr_t PostProcessingProcess = 0x039A9B20;
+    constexpr uintptr_t GSceneRenderTargets = 0x04BDAD90;
 }
 
 template <typename T> T* AtRva(uintptr_t rva) {
@@ -27,6 +29,7 @@ namespace offset {
     // FViewInfo
     constexpr size_t ViewInfo_Size = 0x1C20;
     constexpr size_t View_ViewRect = 0x30;
+    constexpr size_t View_UnscaledViewRect = 0x40;
     constexpr size_t View_ViewMatrices = 0x70;
     constexpr size_t View_TemporalJitterPixels = 0x660;
     constexpr size_t View_bIsGameView = 0x7E4;
@@ -36,6 +39,8 @@ namespace offset {
     constexpr size_t View_ViewState = 0xD30;
     // FSceneRenderer::Views, TArray<FViewInfo>: data ptr at +0, int count at +8
     constexpr size_t SceneRenderer_Views = 0x90;
+
+    constexpr size_t SceneRenderTargets_SceneColor = 0x30;
 }
 
 template <typename T> T& Field(const void* object, size_t offset) {

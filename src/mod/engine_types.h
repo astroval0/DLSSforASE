@@ -8,6 +8,8 @@
 class FSceneRenderer;
 class FRHICommandListImmediate;
 class FViewInfo;
+class FPostProcessing;
+class IPooledRenderTarget;
 
 constexpr uint8_t AAM_TemporalAA = 2;
 

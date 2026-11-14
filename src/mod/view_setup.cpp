@@ -4,20 +4,13 @@
 #include <algorithm>
 #include <spdlog/spdlog.h>
 
+#include "view_setup.h"
 #include "engine_types.h"
 #include "hooks.h"
 #include "offsets.h"
 
 namespace {
     using ViewSetupFn = void(FSceneRenderer* renderer, FRHICommandListImmediate& cmdList);
-
-    struct ViewJitter {
-        const FViewInfo* View = nullptr;
-
-        // projection matrix offset, -1..1 across the view rect. pixel = normalized device coordinate * size / 2
-        float NdcX = 0.0f;
-        float NdcY = 0.0f;
-    };
 
     ViewSetupFn* GViewSetupOriginal = nullptr;
     uint32_t GFrames = 0;
@@ -28,10 +21,6 @@ namespace {
         uint8_t* views = Field<uint8_t*>(renderer, offset::SceneRenderer_Views);
 
         return reinterpret_cast<FViewInfo*>(views + index * offset::ViewInfo_Size);
-    }
-
-    bool IsMainView(const FViewInfo* view) {
-        return Field<bool>(view, offset::View_bIsGameView) && !Field<bool>(view, offset::View_bIsSceneCapture) && !Field<bool>(view, offset::View_bIsReflectionCapture) && Field<void*>(view, offset::View_ViewState) != nullptr;
     }
 
     void ViewSetupDetour(FSceneRenderer* renderer, FRHICommandListImmediate& cmdList) {
@@ -75,6 +64,20 @@ namespace {
     }
 }
 
+bool IsMainView(const FViewInfo* view) {
+    return Field<bool>(view, offset::View_bIsGameView) && !Field<bool>(view, offset::View_bIsSceneCapture) && !Field<bool>(view, offset::View_bIsReflectionCapture) && Field<void*>(view, offset::View_ViewState) != nullptr;
+}
+
 bool HookViewSetup() {
     return CreateHook("PreVisibilityFrameSetup", rva::PreVisibilityFrameSetup, &ViewSetupDetour, &GViewSetupOriginal);
+}
+
+const ViewJitter * FindJitter(const FViewInfo *view) {
+    for (const ViewJitter& jitter : GJitter) {
+        if (jitter.View == view) {
+            return &jitter;
+        }
+    }
+
+    return nullptr;
 }
