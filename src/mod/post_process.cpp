@@ -4,7 +4,6 @@
 #include <spdlog/spdlog.h>
 
 #include "engine_types.h"
-#include "engine_types.h"
 #include "hooks.h"
 #include "offsets.h"
 #include "scene_targets.h"
