@@ -39,8 +39,14 @@ namespace offset {
     constexpr size_t View_ViewState = 0xD30;
     // FSceneRenderer::Views, TArray<FViewInfo>: data ptr at +0, int count at +8
     constexpr size_t SceneRenderer_Views = 0x90;
-
+    // FSceneRenderTargets, SceneColor[2] indexed by CurrentShadingPath, forward 1
     constexpr size_t SceneRenderTargets_SceneColor = 0x30;
+    constexpr size_t SceneRenderTargets_SceneDepthZ = 0x50;
+    constexpr size_t SceneRenderTargets_CurrentShadingPath = 0x5390;
+    // FPooledRenderTarget
+    constexpr size_t PooledRT_TargetableTexture = 0x08;
+    //TD3D11Texture2D; FD3D11TextureBase startz at +0x70
+    constexpr size_t D3D11Texture_Resource = 0xA8;
 }
 
 template <typename T> T& Field(const void* object, size_t offset) {
