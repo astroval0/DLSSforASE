@@ -19,7 +19,7 @@ EngineRhi FindEngineRhi() {
     found.Device = Field<ID3D11Device*>(rhi, offset::D3D11RHI_Device);
     found.Context = Field<ID3D11DeviceContext*>(rhi, offset::D3D11RHI_IMContext);
 
-    spdlog::info("rhi: device {} context {} feature level {:#x}", static_cast<void*>(found.Device), static_cast<void*>(found.Device), static_cast<unsigned>(found.Device->GetFeatureLevel()));
+    spdlog::info("rhi: device {} context {} feature level {:#x}", static_cast<void*>(found.Device), static_cast<void*>(found.Context), static_cast<unsigned>(found.Device->GetFeatureLevel()));
 
     return found;
 }

@@ -12,4 +12,5 @@ template <typename Fn> bool CreateHook(const char* name, uintptr_t rva, Fn detou
 }
 
 bool HookViewSetup();
+bool HookPostProcess();
 bool InstallHooks();

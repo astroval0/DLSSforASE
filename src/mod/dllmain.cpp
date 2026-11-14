@@ -37,7 +37,7 @@ namespace {
 BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
 
-        HANDLE thread = CreateThread(nullptr, 0, Worker, nullptr, 0, nullptr);
+        HANDLE thread = CreateThread(nullptr, 0, Worker, module, 0, nullptr);
 
         if (thread) {
             CloseHandle(thread);

@@ -21,7 +21,7 @@ bool InstallHooks() {
         return false;
     }
 
-    if (HookViewSetup() && MH_EnableHook(MH_ALL_HOOKS) == MH_OK) {
+    if (HookViewSetup() && HookPostProcess() && MH_EnableHook(MH_ALL_HOOKS) == MH_OK) {
         return true;
     }
 
