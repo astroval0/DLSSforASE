@@ -4,8 +4,7 @@
 #pragma once
 
 #include <d3d11.h>
-#include  "engine_types.h"
-#include "scene_targets.h"
+#include "engine_types.h"
 
 struct SceneTargets {
     IPooledRenderTarget* Color = nullptr;
