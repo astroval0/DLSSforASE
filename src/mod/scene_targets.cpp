@@ -23,6 +23,12 @@ ID3D11Resource* NativeResource(const IPooledRenderTarget *pooled) {
     return texture ? Field<ID3D11Resource*>(texture, offset::D3D11Texture_Resource) : nullptr;
 }
 
+ID3D11ShaderResourceView* NativeSRV(const IPooledRenderTarget *pooled) {
+    const void* texture = pooled ? Field<void*>(pooled, offset::PooledRT_TargetableTexture) : nullptr;
+
+    return texture ? Field<ID3D11ShaderResourceView*>(texture, offset::D3D11Texture_ShaderResourceView) : nullptr;
+}
+
 D3D11_TEXTURE2D_DESC DescribeTexture(ID3D11Resource *resource) {
     D3D11_TEXTURE2D_DESC desc = {};
 

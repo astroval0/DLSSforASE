@@ -47,6 +47,7 @@ namespace offset {
     constexpr size_t PooledRT_TargetableTexture = 0x08;
     //TD3D11Texture2D; FD3D11TextureBase startz at +0x70
     constexpr size_t D3D11Texture_Resource = 0xA8;
+    constexpr size_t D3D11Texture_ShaderResourceView = 0xB0;
 }
 
 template <typename T> T& Field(const void* object, size_t offset) {

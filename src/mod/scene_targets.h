@@ -15,4 +15,5 @@ struct SceneTargets {
 SceneTargets FindSceneTargets();
 
 ID3D11Resource* NativeResource(const IPooledRenderTarget* pooled);
+ID3D11ShaderResourceView* NativeSRV(const IPooledRenderTarget* pooled);
 D3D11_TEXTURE2D_DESC DescribeTexture(ID3D11Resource* resource);
