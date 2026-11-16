@@ -24,7 +24,7 @@ ID3D11Resource* NativeResource(const IPooledRenderTarget *pooled) {
 }
 
 ID3D11ShaderResourceView* NativeSRV(const IPooledRenderTarget *pooled) {
-    const void* texture = pooled ? Field<void*>(pooled, offset::PooledRT_TargetableTexture) : nullptr;
+    const void* texture = pooled ? Field<void*>(pooled, offset::PooledRT_ShaderResourceTexture) : nullptr;
 
     return texture ? Field<ID3D11ShaderResourceView*>(texture, offset::D3D11Texture_ShaderResourceView) : nullptr;
 }
