@@ -25,6 +25,8 @@ namespace {
         wil::com_ptr<ID3D11Texture2D> Depth;
         wil::com_ptr<ID3D11UnorderedAccessView> DepthUAV;
         D3D11_TEXTURE2D_DESC DepthDesc = {};
+
+        wil::com_ptr<ID3D11Texture2D> Probe;
     };
 
     PassState GPass;
@@ -104,6 +106,34 @@ bool VerifyDepthTexture(ID3D11ShaderResourceView* source) {
     return true;
 }
 
+void ProbeDepth(const FIntRect& rect) {
+    if (!GPass.Probe) {
+        D3D11_TEXTURE2D_DESC probe = GPass.DepthDesc;
+
+        probe.Width = 1;
+        probe.Height = 1;
+        probe.Usage = D3D11_USAGE_STAGING;
+        probe.BindFlags = 0;
+        probe.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+        if (FAILED(GPass.Device->CreateTexture2D(&probe, nullptr, GPass.Probe.put()))) {
+            return;
+        }
+    }
+
+    UINT x = rect.MinX + rect.Width() / 2;
+    UINT y = rect.MinY + rect.Height() / 2;
+    D3D11_BOX box = {x, y, 0, x + 1, y + 1, 1};
+
+    GPass.Context->CopySubresourceRegion(GPass.Probe.get(), 0, 0, 0, 0, GPass.Depth.get(), 0, &box);
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+
+    if (SUCCEEDED(GPass.Context->Map(GPass.Probe.get(), 0, D3D11_MAP_READ, 0, &mapped))) {
+        spdlog::info("dlss pass: depth probe ({}, {}) = {:.6f}", x, y, *static_cast<const float*>(mapped.pData));
+        GPass.Context->Unmap(GPass.Probe.get(), 0);
+    }
+}
+
 void RunDlssPass(const DlssPassInputs &inputs) {
     if (!GPass.Tried) {
         GPass.Tried = true;
@@ -121,10 +151,14 @@ void RunDlssPass(const DlssPassInputs &inputs) {
         ID3D11ShaderResourceView* srv = inputs.Depth.get();
         ID3D11UnorderedAccessView* uav = GPass.DepthUAV.get();
 
-        GPass.Context->CSGetShader(GPass.DepthCopy.get(), nullptr, 0);
+        GPass.Context->CSSetShader(GPass.DepthCopy.get(), nullptr, 0);
         GPass.Context->CSSetShaderResources(0, 1, &srv);
         GPass.Context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
         GPass.Context->Dispatch((GPass.DepthDesc.Width + 7) / 8, (GPass.DepthDesc.Height + 7) / 8, 1);
+
+        if (inputs.Probe) {
+            ProbeDepth(inputs.Rect);
+        }
     }
 
     // we dont want to wipe the engines bindings
