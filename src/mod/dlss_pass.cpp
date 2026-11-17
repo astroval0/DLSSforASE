@@ -6,6 +6,8 @@
 #include <d3d11_1.h>
 #include <spdlog/spdlog.h>
 #include <depth_copy.h>
+
+#include "dlss.h"
 #include "rhi.h"
 #include "scene_targets.h"
 
@@ -36,6 +38,11 @@ bool InitPass() {
     EngineRhi rhi = FindEngineRhi();
 
     if (!rhi.Device || !rhi.Context) {
+        return false;
+    }
+
+    if (!InitDlss(rhi.Device)) {
+        spdlog::error("DLSS is not available :(");
         return false;
     }
 
@@ -146,6 +153,8 @@ void RunDlssPass(const DlssPassInputs &inputs) {
 
     wil::com_ptr<ID3DDeviceContextState> engineState;
     GPass.Context1->SwapDeviceContextState(GPass.OurState.get(), engineState.put());
+
+    VerifyDlssFeature(GPass.Context, inputs.Rect.Width(), inputs.Rect.Height());
 
     if (VerifyDepthTexture(inputs.Depth.get())) {
         ID3D11ShaderResourceView* srv = inputs.Depth.get();

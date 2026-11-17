@@ -2,8 +2,13 @@
 // Copyright (c) 2026 AstroVal0. Licensed under Apache-2.0, see LICENSE and NOTICE.
 
 #include "dlss.h"
+
+#include <filesystem>
 #include <nvsdk_ngx.h>
+#include<nvsdk_ngx_helpers_d3d.h>
 #include <spdlog/spdlog.h>
+
+extern "C" IMAGE_DOS_HEADER __ImageBase;
 
 namespace {
 
@@ -11,6 +16,10 @@ namespace {
     constexpr char ProjectId[] = "41737472-6f56-616c-3065-724204b777fa";
 
     NVSDK_NGX_Parameter* GParameters = nullptr;
+
+    NVSDK_NGX_Handle* GFeature = nullptr;
+    int GFeatureWidth = 0;
+    int GFeatureHeight = 0;
 
     void NVSDK_CONV NgxLog(const char* message, NVSDK_NGX_Logging_Level, NVSDK_NGX_Feature) {
         std::string_view text = message;
@@ -23,7 +32,12 @@ namespace {
     }
 }
 
-bool InitDlss(ID3D11Device *device, const std::wstring &dllDirectory) {
+bool InitDlss(ID3D11Device* device) {
+
+    wchar_t path[MAX_PATH];
+    GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), path, MAX_PATH);
+    std::wstring dllDirectory = std::filesystem::path(path).parent_path().wstring();
+
     const wchar_t* paths[] = {dllDirectory.c_str()};
 
     NVSDK_NGX_FeatureCommonInfo info = {};
@@ -57,4 +71,42 @@ bool InitDlss(ID3D11Device *device, const std::wstring &dllDirectory) {
     spdlog::info("dlss: available {} needs newer driver {}", available, needsDriver);
 
     return available != 0;
+}
+
+bool VerifyDlssFeature(ID3D11DeviceContext *context, int width, int height) {
+    if (width == GFeatureWidth && height == GFeatureHeight) {
+        return GFeature != nullptr;
+    }
+
+    if (GFeature) {
+        NVSDK_NGX_D3D11_ReleaseFeature(GFeature);
+        GFeature = nullptr;
+    }
+
+    //cache failed sizes
+    GFeatureWidth = width;
+    GFeatureHeight = height;
+
+    NVSDK_NGX_DLSS_Create_Params create = {};
+
+    create.Feature.InWidth = width;
+    create.Feature.InHeight = height;
+    create.Feature.InTargetWidth = width;
+    create.Feature.InTargetHeight = height;
+    create.Feature.InPerfQualityValue = NVSDK_NGX_PerfQuality_Value_DLAA;
+
+    create.InFeatureCreateFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes | NVSDK_NGX_DLSS_Feature_Flags_DepthInverted | NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+    NVSDK_NGX_Result result = NGX_D3D11_CREATE_DLSS_EXT(context, &GFeature, GParameters, &create);
+
+    if (NVSDK_NGX_FAILED(result)) {
+        spdlog::error("dlss: create feature {}x{} failed {:#x}", width, height, static_cast<unsigned>(result));
+
+        GFeature = nullptr;
+
+        return false;
+    }
+
+    spdlog::info("dlss: feature created {}x{} DLAA", width, height);
+
+    return true;
 }

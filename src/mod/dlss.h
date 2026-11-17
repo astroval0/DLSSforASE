@@ -6,4 +6,5 @@
 #include <d3d11.h>
 #include <string>
 
-bool InitDlss(ID3D11Device* device, const std::wstring& dllDirectory);
+bool InitDlss(ID3D11Device* device);
+bool VerifyDlssFeature(ID3D11DeviceContext* context, int width, int height);
