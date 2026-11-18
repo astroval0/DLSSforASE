@@ -4,6 +4,7 @@
 #include "dlss.h"
 
 #include <filesystem>
+#include <optional>
 #include <nvsdk_ngx.h>
 #include<nvsdk_ngx_helpers_d3d.h>
 #include <spdlog/spdlog.h>
@@ -20,6 +21,8 @@ namespace {
     NVSDK_NGX_Handle* GFeature = nullptr;
     int GFeatureWidth = 0;
     int GFeatureHeight = 0;
+
+    std::optional<NVSDK_NGX_Result> GLastEvaluate;
 
     void NVSDK_CONV NgxLog(const char* message, NVSDK_NGX_Logging_Level, NVSDK_NGX_Feature) {
         std::string_view text = message;
@@ -109,4 +112,35 @@ bool VerifyDlssFeature(ID3D11DeviceContext *context, int width, int height) {
     spdlog::info("dlss: feature created {}x{} DLAA", width, height);
 
     return true;
+}
+
+bool EvaluateDlss(ID3D11DeviceContext *context, const DlssEvaluateInputs &inputs) {
+    NVSDK_NGX_D3D11_DLSS_Eval_Params eval = {};
+
+    eval.Feature.pInColor = inputs.Color;
+    eval.Feature.pInOutput = inputs.Output;
+    eval.pInDepth = inputs.Depth;
+    eval.pInMotionVectors = inputs.Motion;
+    eval.InJitterOffsetX = inputs.JitterX;
+    eval.InJitterOffsetY = inputs.JitterY;
+    eval.InRenderSubrectDimensions.Width = inputs.Rect.Width();
+    eval.InRenderSubrectDimensions.Height = inputs.Rect.Height();
+    eval.InColorSubrectBase.X = inputs.Rect.MinX;
+    eval.InColorSubrectBase.Y = inputs.Rect.MinY;
+    eval.InDepthSubrectBase.X = inputs.Rect.MinX;
+    eval.InDepthSubrectBase.Y = inputs.Rect.MinY;
+
+    NVSDK_NGX_Result result = NGX_D3D11_EVALUATE_DLSS_EXT(context, GFeature, GParameters, &eval);
+
+    if (result != GLastEvaluate) {
+        if (NVSDK_NGX_FAILED(result)) {
+            spdlog::error("dlss: evaluate failed {:#x}", static_cast<unsigned>(result));
+        } else {
+            spdlog::info("dlss: evaluate ok");
+        }
+
+        GLastEvaluate = result;
+    }
+
+    return NVSDK_NGX_SUCCEED(result);
 }

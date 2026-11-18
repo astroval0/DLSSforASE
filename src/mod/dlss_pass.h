@@ -11,7 +11,13 @@
 struct DlssPassInputs {
     wil::com_ptr<ID3D11ShaderResourceView> Depth;
     FIntRect Rect = {};
+
+    float JitterX = 0.0f;
+    float JitterY = 0.0f;
+
     bool Probe = false;
+
+    wil::com_ptr<ID3D11Resource> Color;
 };
 
 // RHI thread onlyy

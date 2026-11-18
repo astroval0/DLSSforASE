@@ -22,14 +22,18 @@ namespace {
         if (IsMainView(&view)) {
             SceneTargets targets = FindSceneTargets();
             const FIntRect& rect = Field<FIntRect>(&view, offset::View_ViewRect);
+            const ViewJitter* jitter = FindJitter(&view);
 
             DlssPassInputs inputs;
 
+            inputs.Color = NativeResource(targets.Color);
             inputs.Depth = NativeSRV(targets.Depth);
             inputs.Rect = rect;
+            inputs.JitterX = jitter ? jitter->NdcX * rect.Width() * 0.5f : 0.0f;
+            inputs.JitterY = jitter ? -jitter->NdcY * rect.Height() * 0.5f : 0.0f;
             inputs.Probe = ++GFrames % 600 == 0;
 
-            if (inputs.Depth) {
+            if (inputs.Color && inputs.Depth) {
                 LoadRhiWork(&cmdList, [inputs] { RunDlssPass(inputs); });
             }
 
@@ -39,13 +43,12 @@ namespace {
                 D3D11_TEXTURE2D_DESC motion = DescribeTexture(NativeResource(velocity));
 
                 const FIntRect& unscaled = Field<FIntRect>(&view, offset::View_UnscaledViewRect);
-                const ViewJitter* jitter = FindJitter(&view);
 
                 spdlog::info("post f{} rect {}x{} unscaled {}x{} aa={} | color {} {}x{} fmt {} | depth {} fmt {} | velocity {} {}x{} fmt {} | jitter px=({:.3f},{:.3f})",
                     GFrames, rect.Width(), rect.Height(), unscaled.Width(), unscaled.Height(), Field<uint8_t>(&view, offset::View_AntiAliasingMethod), static_cast<void*>(targets.Color),
                     color.Width, color.Height, static_cast<int>(color.Format), static_cast<void*>(targets.Depth),
                     static_cast<int>(depth.Format), static_cast<void*>(velocity), motion.Width, motion.Height,
-                    static_cast<int>(motion.Format), jitter ? jitter->NdcX * rect.Width() * 0.5f : 0.0f, jitter ? -jitter->NdcY * rect.Height() * 0.5f : 0.0f);
+                    static_cast<int>(motion.Format), inputs.JitterX, inputs.JitterY);
             }
         }
 
