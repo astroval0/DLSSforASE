@@ -7,6 +7,8 @@
 #include <DirectXPackedVector.h>
 #include <spdlog/spdlog.h>
 #include <depth_copy.h>
+#include <fullscreen.h>
+#include <write_color.h>
 
 #include "dlss.h"
 #include "rhi.h"
@@ -24,6 +26,9 @@ namespace {
         wil::com_ptr<ID3DDeviceContextState> OurState;
 
         wil::com_ptr<ID3D11ComputeShader> DepthCopy;
+        wil::com_ptr<ID3D11VertexShader> Fullscreen;
+        wil::com_ptr<ID3D11PixelShader> WriteColor;
+        wil::com_ptr<ID3D11BlendState> WriteColorBlend;
 
         wil::com_ptr<ID3D11Texture2D> Depth;
         wil::com_ptr<ID3D11UnorderedAccessView> DepthUAV;
@@ -34,9 +39,14 @@ namespace {
         wil::com_ptr<ID3D11Texture2D> Motion;
         wil::com_ptr<ID3D11UnorderedAccessView> MotionUAV;
         wil::com_ptr<ID3D11Texture2D> Output;
+        wil::com_ptr<ID3D11ShaderResourceView> OutputSRV;
         D3D11_TEXTURE2D_DESC OutputDesc = {};
 
         wil::com_ptr<ID3D11Texture2D> OutputProbe;
+
+        // just a ptr to check if scene color changed, ColorRTV keeps the texture alive
+        ID3D11Resource* ColorTarget = nullptr;
+        wil::com_ptr<ID3D11RenderTargetView> ColorRTV;
     };
 
     PassState GPass;
@@ -76,6 +86,31 @@ bool InitPass() {
 
     if (FAILED(hr)) {
         spdlog::error("dlss pass: CreateComputeShader {:#x}", static_cast<unsigned>(hr));
+        return false;
+    }
+
+    hr = rhi.Device->CreateVertexShader(FullscreenVS, sizeof(FullscreenVS), nullptr, GPass.Fullscreen.put());
+
+    if (FAILED(hr)) {
+        spdlog::error("dlss pass: CreateVertexShader {:#x}", static_cast<unsigned>(hr));
+        return false;
+    }
+
+    hr = rhi.Device->CreatePixelShader(WriteColorPS, sizeof(WriteColorPS), nullptr, GPass.WriteColor.put());
+
+    if (FAILED(hr)) {
+        spdlog::error("dlss pass: CreatePixelShader {:#x}", static_cast<unsigned>(hr));
+        return false;
+    }
+
+    // rgb only, we dont want to touch the engines alpha
+    CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
+    blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE;
+
+    hr = rhi.Device->CreateBlendState(&blend, GPass.WriteColorBlend.put());
+
+    if (FAILED(hr)) {
+        spdlog::error("dlss pass: CreateBlendState {:#x}", static_cast<unsigned>(hr));
         return false;
     }
 
@@ -160,6 +195,7 @@ bool VerifyDlssTextures(const FIntRect& rect) {
     GPass.Motion.reset();
     GPass.MotionUAV.reset();
     GPass.Output.reset();
+    GPass.OutputSRV.reset();
 
     D3D11_TEXTURE2D_DESC desc = {};
 
@@ -179,7 +215,7 @@ bool VerifyDlssTextures(const FIntRect& rect) {
 
     desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-    if (FAILED(GPass.Device->CreateTexture2D(&desc, nullptr, GPass.Output.put()))) {
+    if (FAILED(GPass.Device->CreateTexture2D(&desc, nullptr, GPass.Output.put())) || FAILED(GPass.Device->CreateShaderResourceView(GPass.Output.get(), nullptr, GPass.OutputSRV.put()))) {
         spdlog::error("dlss pass: output texture {}x{} failed", width, height);
         return false;
     }
@@ -234,6 +270,38 @@ void ProbeOutput(ID3D11Resource* color, const FIntRect& rect) {
     }
 }
 
+bool VerifyColorTarget(ID3D11Resource* color) {
+    if (color == GPass.ColorTarget) {
+        return GPass.ColorRTV != nullptr;
+    }
+
+    GPass.ColorTarget = color;
+    GPass.ColorRTV.reset();
+
+    if (FAILED(GPass.Device->CreateRenderTargetView(color, nullptr, GPass.ColorRTV.put()))) {
+        spdlog::error("dlss pass: scene color RTV failed, fmt {}", static_cast<int>(DescribeTexture(color).Format));
+        return false;
+    }
+
+    return true;
+}
+
+void WriteSceneColor(const FIntRect& rect) {
+    ID3D11RenderTargetView* rtv = GPass.ColorRTV.get();
+    ID3D11ShaderResourceView* srv = GPass.OutputSRV.get();
+
+    D3D11_VIEWPORT viewport = {static_cast<float>(rect.MinX), static_cast<float>(rect.MinY), static_cast<float>(rect.Width()), static_cast<float>(rect.Height()), 0.0f, 1.0f};
+
+    GPass.Context->OMSetRenderTargets(1, &rtv, nullptr);
+    GPass.Context->OMSetBlendState(GPass.WriteColorBlend.get(), nullptr, 0xFFFFFFFF);
+    GPass.Context->RSSetViewports(1, &viewport);
+    GPass.Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    GPass.Context->VSSetShader(GPass.Fullscreen.get(), nullptr, 0);
+    GPass.Context->PSSetShader(GPass.WriteColor.get(), nullptr, 0);
+    GPass.Context->PSSetShaderResources(0, 1, &srv);
+    GPass.Context->Draw(3, 0);
+}
+
 void RunDlssPass(const DlssPassInputs &inputs) {
     if (!GPass.Tried) {
         GPass.Tried = true;
@@ -261,8 +329,14 @@ void RunDlssPass(const DlssPassInputs &inputs) {
         dlss.JitterX = inputs.JitterX;
         dlss.JitterY = inputs.JitterY;
 
-        if (EvaluateDlss(GPass.Context, dlss) && inputs.Probe) {
-            ProbeOutput(inputs.Color.get(), inputs.Rect);
+        if (EvaluateDlss(GPass.Context, dlss)) {
+            if (inputs.Probe) {
+                ProbeOutput(inputs.Color.get(), inputs.Rect);
+            }
+
+            if (VerifyColorTarget(inputs.Color.get())) {
+                WriteSceneColor(inputs.Rect);
+            }
         }
     }
 
