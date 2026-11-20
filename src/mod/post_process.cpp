@@ -1,6 +1,7 @@
 // Astro's DLSSforASE - https://github.com/astroval0/DLSSforASE
 // Copyright (c) 2026 AstroVal0. Licensed under Apache-2.0, see LICENSE and NOTICE.
 
+#include <DirectXMath.h>
 #include <spdlog/spdlog.h>
 
 #include "dlss_pass.h"
@@ -18,6 +19,51 @@ namespace {
     PostProcessFn* GPostProcessOriginal = nullptr;
     uint32_t GFrames = 0;
 
+    struct LastCamera {
+        bool Valid = false;
+        DirectX::XMFLOAT4X4 TranslatedViewProjection = {};
+        DirectX::XMFLOAT3 PreViewTranslation = {};
+        float JitterNdcX = 0.0f;
+        float JitterNdcY = 0.0f;
+    };
+
+    LastCamera GLastCamera;
+
+    DirectX::XMFLOAT4X4 MakeClipToPrevClip(const FViewInfo& view, const ViewJitter* jitter) {
+        using namespace DirectX;
+
+        XMFLOAT4X4 result;
+        XMStoreFloat4x4(&result, XMMatrixIdentity());
+
+        if (!GLastCamera.Valid) {
+            return result;
+        }
+
+        const XMFLOAT4X4& invTvp = Field<XMFLOAT4X4>(&view, offset::View_ViewMatrices + offset::ViewMatrices_InvTranslatedViewProjection);
+        const XMFLOAT3& pvt = Field<XMFLOAT3>(&view, offset::View_ViewMatrices + offset::ViewMatrices_PreViewTranslation);
+        const XMFLOAT3& lastPvt = GLastCamera.PreViewTranslation;
+
+        float jitterX = jitter ? jitter->NdcX : 0.0f;
+        float jitterY = jitter ? jitter->NdcY : 0.0f;
+
+        XMMATRIX cameraMove = XMMatrixTranslation(lastPvt.x - pvt.x, lastPvt.y - pvt.y, lastPvt.z - pvt.z);
+
+        // jitter change is baked in cuz dlss wants motion without jitter
+        XMMATRIX jitterChange = XMMatrixTranslation(jitterX - GLastCamera.JitterNdcX, jitterY - GLastCamera.JitterNdcY, 0.0f);
+
+        XMStoreFloat4x4(&result, XMLoadFloat4x4(&invTvp) * cameraMove * XMLoadFloat4x4(&GLastCamera.TranslatedViewProjection) * jitterChange);
+
+        return result;
+    }
+
+    void RememberCamera(const FViewInfo& view, const ViewJitter* jitter) {
+        GLastCamera.Valid = true;
+        GLastCamera.TranslatedViewProjection = Field<DirectX::XMFLOAT4X4>(&view, offset::View_ViewMatrices + offset::ViewMatrices_TranslatedViewProjection);
+        GLastCamera.PreViewTranslation = Field<DirectX::XMFLOAT3>(&view, offset::View_ViewMatrices + offset::ViewMatrices_PreViewTranslation);
+        GLastCamera.JitterNdcX = jitter ? jitter->NdcX : 0.0f;
+        GLastCamera.JitterNdcY = jitter ? jitter->NdcY : 0.0f;
+    }
+
     void PostProcessDetour(FPostProcessing* postProcessing, FRHICommandListImmediate& cmdList, FViewInfo& view, IPooledRenderTarget*& velocity) {
         if (IsMainView(&view)) {
             SceneTargets targets = FindSceneTargets();
@@ -31,7 +77,10 @@ namespace {
             inputs.Rect = rect;
             inputs.JitterX = jitter ? jitter->NdcX * rect.Width() * 0.5f : 0.0f;
             inputs.JitterY = jitter ? -jitter->NdcY * rect.Height() * 0.5f : 0.0f;
+            inputs.ClipToPrevClip = MakeClipToPrevClip(view, jitter);
             inputs.Probe = ++GFrames % 600 == 0;
+
+            RememberCamera(view, jitter);
 
             if (inputs.Color && inputs.Depth) {
                 LoadRhiWork(&cmdList, [inputs] { RunDlssPass(inputs); });

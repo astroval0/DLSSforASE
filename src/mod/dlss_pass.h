@@ -4,6 +4,7 @@
 #pragma once
 
 #include <d3d11.h>
+#include <DirectXMath.h>
 #include <wil/com.h>
 
 #include "engine_types.h"
@@ -14,6 +15,8 @@ struct DlssPassInputs {
 
     float JitterX = 0.0f;
     float JitterY = 0.0f;
+
+    DirectX::XMFLOAT4X4 ClipToPrevClip = {};
 
     bool Probe = false;
 

@@ -66,5 +66,6 @@ target_link_libraries(DLSSforASE_Mod PRIVATE WIL::WIL spdlog::spdlog minhook::mi
 add_shader(DLSSforASE_Mod src/mod/shaders/depth_copy.hlsl main cs_5_0 DepthCopyCS)
 add_shader(DLSSforASE_Mod src/mod/shaders/fullscreen.hlsl main vs_5_0 FullscreenVS)
 add_shader(DLSSforASE_Mod src/mod/shaders/write_color.hlsl main ps_5_0 WriteColorPS)
+add_shader(DLSSforASE_Mod src/mod/shaders/motion_vectors.hlsl main cs_5_0 MotionVectorsCS)
 add_custom_command(TARGET DLSSforASE_Mod POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLSS_SDK}/lib/Windows_x86_64/rel/nvngx_dlss.dll $<TARGET_FILE_DIR:DLSSforASE_Mod>)
 add_dependencies(DLSSforASE DLSSforASE_Mod)

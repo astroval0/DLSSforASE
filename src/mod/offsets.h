@@ -37,6 +37,10 @@ namespace offset {
     constexpr size_t View_bIsReflectionCapture = 0x808;
     constexpr size_t View_AntiAliasingMethod = 0xB40;
     constexpr size_t View_ViewState = 0xD30;
+    // FViewMatrices, offsets from View_ViewMatrices
+    constexpr size_t ViewMatrices_TranslatedViewProjection = 0x80;
+    constexpr size_t ViewMatrices_InvTranslatedViewProjection = 0xC0;
+    constexpr size_t ViewMatrices_PreViewTranslation = 0x114;
     // FSceneRenderer::Views, TArray<FViewInfo>: data ptr at +0, int count at +8
     constexpr size_t SceneRenderer_Views = 0x90;
     // FSceneRenderTargets, SceneColor[2] indexed by CurrentShadingPath, forward 1

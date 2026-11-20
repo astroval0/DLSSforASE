@@ -9,12 +9,21 @@
 #include <depth_copy.h>
 #include <fullscreen.h>
 #include <write_color.h>
+#include <motion_vectors.h>
 
 #include "dlss.h"
 #include "rhi.h"
 #include "scene_targets.h"
 
 namespace {
+    struct MotionConstants {
+        DirectX::XMFLOAT4X4 ClipToPrevClip;
+        int OffsetX;
+        int OffsetY;
+        UINT Width;
+        UINT Height;
+    };
+
     struct PassState {
         bool Tried = false;
         bool Ready = false;
@@ -29,6 +38,8 @@ namespace {
         wil::com_ptr<ID3D11VertexShader> Fullscreen;
         wil::com_ptr<ID3D11PixelShader> WriteColor;
         wil::com_ptr<ID3D11BlendState> WriteColorBlend;
+        wil::com_ptr<ID3D11ComputeShader> MotionVectors;
+        wil::com_ptr<ID3D11Buffer> MotionCB;
 
         wil::com_ptr<ID3D11Texture2D> Depth;
         wil::com_ptr<ID3D11UnorderedAccessView> DepthUAV;
@@ -43,6 +54,7 @@ namespace {
         D3D11_TEXTURE2D_DESC OutputDesc = {};
 
         wil::com_ptr<ID3D11Texture2D> OutputProbe;
+        wil::com_ptr<ID3D11Texture2D> MotionProbe;
 
         // just a ptr to check if scene color changed, ColorRTV keeps the texture alive
         ID3D11Resource* ColorTarget = nullptr;
@@ -111,6 +123,22 @@ bool InitPass() {
 
     if (FAILED(hr)) {
         spdlog::error("dlss pass: CreateBlendState {:#x}", static_cast<unsigned>(hr));
+        return false;
+    }
+
+    hr = rhi.Device->CreateComputeShader(MotionVectorsCS, sizeof(MotionVectorsCS), nullptr, GPass.MotionVectors.put());
+
+    if (FAILED(hr)) {
+        spdlog::error("dlss pass: CreateComputeShader motion vectors {:#x}", static_cast<unsigned>(hr));
+        return false;
+    }
+
+    CD3D11_BUFFER_DESC constants(sizeof(MotionConstants), D3D11_BIND_CONSTANT_BUFFER);
+
+    hr = rhi.Device->CreateBuffer(&constants, nullptr, GPass.MotionCB.put());
+
+    if (FAILED(hr)) {
+        spdlog::error("dlss pass: CreateBuffer {:#x}", static_cast<unsigned>(hr));
         return false;
     }
 
@@ -220,14 +248,61 @@ bool VerifyDlssTextures(const FIntRect& rect) {
         return false;
     }
 
-    // no motion vectors yet, dlss gets zeros
-    const float zero[4] = {};
-    GPass.Context->ClearUnorderedAccessViewFloat(GPass.MotionUAV.get(), zero);
-
     GPass.OutputDesc = desc;
     spdlog::info("dlss pass: motion and output {}x{}", width, height);
 
     return true;
+}
+
+void WriteMotionVectors(const DlssPassInputs& inputs) {
+    MotionConstants constants;
+
+    constants.ClipToPrevClip = inputs.ClipToPrevClip;
+    constants.OffsetX = inputs.Rect.MinX;
+    constants.OffsetY = inputs.Rect.MinY;
+    constants.Width = inputs.Rect.Width();
+    constants.Height = inputs.Rect.Height();
+
+    GPass.Context->UpdateSubresource(GPass.MotionCB.get(), 0, nullptr, &constants, 0, 0);
+
+    ID3D11Buffer* cb = GPass.MotionCB.get();
+    ID3D11ShaderResourceView* srv = inputs.Depth.get();
+    ID3D11UnorderedAccessView* uav = GPass.MotionUAV.get();
+
+    GPass.Context->CSSetShader(GPass.MotionVectors.get(), nullptr, 0);
+    GPass.Context->CSSetConstantBuffers(0, 1, &cb);
+    GPass.Context->CSSetShaderResources(0, 1, &srv);
+    GPass.Context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+    GPass.Context->Dispatch((constants.Width + 7) / 8, (constants.Height + 7) / 8, 1);
+
+    // dlss reads Motion next, d3d nulls its srv if our uav is still bound
+    uav = nullptr;
+    GPass.Context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+}
+
+void ProbeMotion(const FIntRect& rect) {
+    if (!GPass.MotionProbe) {
+        CD3D11_TEXTURE2D_DESC probe(DXGI_FORMAT_R16G16_FLOAT, 1, 1, 1, 1, 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ);
+
+        if (FAILED(GPass.Device->CreateTexture2D(&probe, nullptr, GPass.MotionProbe.put()))) {
+            return;
+        }
+    }
+
+    UINT x = rect.Width() / 2;
+    UINT y = rect.Height() / 2;
+    D3D11_BOX box = {x, y, 0, x + 1, y + 1, 1};
+
+    GPass.Context->CopySubresourceRegion(GPass.MotionProbe.get(), 0, 0, 0, 0, GPass.Motion.get(), 0, &box);
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+
+    if (SUCCEEDED(GPass.Context->Map(GPass.MotionProbe.get(), 0, D3D11_MAP_READ, 0, &mapped))) {
+        using DirectX::PackedVector::XMConvertHalfToFloat;
+        const DirectX::PackedVector::HALF* texel = static_cast<const DirectX::PackedVector::HALF*>(mapped.pData);
+
+        spdlog::info("dlss pass: motion probe ({}, {}) = ({:.3f}, {:.3f}) px", x, y, XMConvertHalfToFloat(texel[0]), XMConvertHalfToFloat(texel[1]));
+        GPass.Context->Unmap(GPass.MotionProbe.get(), 0);
+    }
 }
 
 void ProbeOutput(ID3D11Resource* color, const FIntRect& rect) {
@@ -316,6 +391,12 @@ void RunDlssPass(const DlssPassInputs &inputs) {
     GPass.Context1->SwapDeviceContextState(GPass.OurState.get(), engineState.put());
 
     if (VerifyDlssFeature(GPass.Context, inputs.Rect.Width(), inputs.Rect.Height()) && VerifyDlssTextures(inputs.Rect)) {
+        WriteMotionVectors(inputs);
+
+        if (inputs.Probe) {
+            ProbeMotion(inputs.Rect);
+        }
+
         wil::com_ptr<ID3D11Resource> depth;
         inputs.Depth->GetResource(depth.put());
 
