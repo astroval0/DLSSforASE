@@ -11,6 +11,8 @@
 
 struct DlssPassInputs {
     wil::com_ptr<ID3D11ShaderResourceView> Depth;
+    wil::com_ptr<ID3D11ShaderResourceView> Velocity;
+
     FIntRect Rect = {};
 
     float JitterX = 0.0f;

@@ -266,12 +266,12 @@ void WriteMotionVectors(const DlssPassInputs& inputs) {
     GPass.Context->UpdateSubresource(GPass.MotionCB.get(), 0, nullptr, &constants, 0, 0);
 
     ID3D11Buffer* cb = GPass.MotionCB.get();
-    ID3D11ShaderResourceView* srv = inputs.Depth.get();
+    ID3D11ShaderResourceView* srvs[2] = {inputs.Depth.get(), inputs.Velocity.get()};
     ID3D11UnorderedAccessView* uav = GPass.MotionUAV.get();
 
     GPass.Context->CSSetShader(GPass.MotionVectors.get(), nullptr, 0);
     GPass.Context->CSSetConstantBuffers(0, 1, &cb);
-    GPass.Context->CSSetShaderResources(0, 1, &srv);
+    GPass.Context->CSSetShaderResources(0, 2, srvs);
     GPass.Context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
     GPass.Context->Dispatch((constants.Width + 7) / 8, (constants.Height + 7) / 8, 1);
 

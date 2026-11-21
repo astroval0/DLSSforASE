@@ -74,6 +74,7 @@ namespace {
 
             inputs.Color = NativeResource(targets.Color);
             inputs.Depth = NativeSRV(targets.Depth);
+            inputs.Velocity = NativeSRV(velocity);
             inputs.Rect = rect;
             inputs.JitterX = jitter ? jitter->NdcX * rect.Width() * 0.5f : 0.0f;
             inputs.JitterY = jitter ? -jitter->NdcY * rect.Height() * 0.5f : 0.0f;
