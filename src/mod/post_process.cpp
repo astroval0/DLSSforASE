@@ -85,6 +85,9 @@ namespace {
 
             if (inputs.Color && inputs.Depth) {
                 LoadRhiWork(&cmdList, [inputs] { RunDlssPass(inputs); });
+
+                // the forced TemporalAA just turns into fxaa in post, dlss already did the aa
+                Field<uint8_t>(&view, offset::View_AntiAliasingMethod) = AAM_None;
             }
 
             if (inputs.Probe) {

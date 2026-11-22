@@ -11,6 +11,7 @@ class FViewInfo;
 class FPostProcessing;
 class IPooledRenderTarget;
 
+constexpr uint8_t AAM_None = 0;
 constexpr uint8_t AAM_TemporalAA = 2;
 
 struct FIntRect {
