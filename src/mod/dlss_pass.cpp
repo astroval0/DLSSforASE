@@ -409,6 +409,7 @@ void RunDlssPass(const DlssPassInputs &inputs) {
         dlss.Rect = inputs.Rect;
         dlss.JitterX = inputs.JitterX;
         dlss.JitterY = inputs.JitterY;
+        dlss.Reset = inputs.Reset;
 
         if (EvaluateDlss(GPass.Context, dlss)) {
             if (inputs.Probe) {

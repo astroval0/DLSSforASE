@@ -16,6 +16,8 @@ struct DlssEvaluateInputs {
 
     float JitterX = 0.0f;
     float JitterY = 0.0f;
+
+    bool Reset = false;
 };
 
 bool InitDlss(ID3D11Device* device);

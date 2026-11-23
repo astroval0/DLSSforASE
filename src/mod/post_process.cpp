@@ -18,9 +18,11 @@ namespace {
 
     PostProcessFn* GPostProcessOriginal = nullptr;
     uint32_t GFrames = 0;
+    bool GLastReset = false;
 
     struct LastCamera {
         bool Valid = false;
+        const void* ViewState = nullptr;
         DirectX::XMFLOAT4X4 TranslatedViewProjection = {};
         DirectX::XMFLOAT3 PreViewTranslation = {};
         float JitterNdcX = 0.0f;
@@ -29,13 +31,17 @@ namespace {
 
     LastCamera GLastCamera;
 
-    DirectX::XMFLOAT4X4 MakeClipToPrevClip(const FViewInfo& view, const ViewJitter* jitter) {
+    bool ShouldResetHistory(const FViewInfo& view) {
+        return !GLastCamera.Valid || Field<bool>(&view, offset::View_bCameraCut) || Field<void*>(&view, offset::View_ViewState) != GLastCamera.ViewState;
+    }
+
+    DirectX::XMFLOAT4X4 MakeClipToPrevClip(const FViewInfo& view, const ViewJitter* jitter, bool reset) {
         using namespace DirectX;
 
         XMFLOAT4X4 result;
         XMStoreFloat4x4(&result, XMMatrixIdentity());
 
-        if (!GLastCamera.Valid) {
+        if (reset) {
             return result;
         }
 
@@ -58,6 +64,7 @@ namespace {
 
     void RememberCamera(const FViewInfo& view, const ViewJitter* jitter) {
         GLastCamera.Valid = true;
+        GLastCamera.ViewState = Field<void*>(&view, offset::View_ViewState);
         GLastCamera.TranslatedViewProjection = Field<DirectX::XMFLOAT4X4>(&view, offset::View_ViewMatrices + offset::ViewMatrices_TranslatedViewProjection);
         GLastCamera.PreViewTranslation = Field<DirectX::XMFLOAT3>(&view, offset::View_ViewMatrices + offset::ViewMatrices_PreViewTranslation);
         GLastCamera.JitterNdcX = jitter ? jitter->NdcX : 0.0f;
@@ -78,8 +85,16 @@ namespace {
             inputs.Rect = rect;
             inputs.JitterX = jitter ? jitter->NdcX * rect.Width() * 0.5f : 0.0f;
             inputs.JitterY = jitter ? -jitter->NdcY * rect.Height() * 0.5f : 0.0f;
-            inputs.ClipToPrevClip = MakeClipToPrevClip(view, jitter);
+            inputs.Reset = ShouldResetHistory(view);
+            inputs.ClipToPrevClip = MakeClipToPrevClip(view, jitter, inputs.Reset);
             inputs.Probe = ++GFrames % 600 == 0;
+
+            // only log the first frame so a stuck camera cut cant spam the launcher
+            if (inputs.Reset && !GLastReset) {
+                spdlog::info("post f{} dlss history reset, camera cut {}", GFrames, Field<bool>(&view, offset::View_bCameraCut));
+            }
+
+            GLastReset = inputs.Reset;
 
             RememberCamera(view, jitter);
 

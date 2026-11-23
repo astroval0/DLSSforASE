@@ -32,6 +32,7 @@ namespace offset {
     constexpr size_t View_UnscaledViewRect = 0x40;
     constexpr size_t View_ViewMatrices = 0x70;
     constexpr size_t View_TemporalJitterPixels = 0x660;
+    constexpr size_t View_bCameraCut = 0x7D8;
     constexpr size_t View_bIsGameView = 0x7E4;
     constexpr size_t View_bIsSceneCapture = 0x7E7;
     constexpr size_t View_bIsReflectionCapture = 0x808;

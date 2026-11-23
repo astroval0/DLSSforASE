@@ -19,6 +19,7 @@ struct DlssPassInputs {
     float JitterY = 0.0f;
 
     DirectX::XMFLOAT4X4 ClipToPrevClip = {};
+    bool Reset = false;
 
     bool Probe = false;
 

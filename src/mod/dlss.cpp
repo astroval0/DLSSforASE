@@ -123,6 +123,7 @@ bool EvaluateDlss(ID3D11DeviceContext *context, const DlssEvaluateInputs &inputs
     eval.pInMotionVectors = inputs.Motion;
     eval.InJitterOffsetX = inputs.JitterX;
     eval.InJitterOffsetY = inputs.JitterY;
+    eval.InReset = inputs.Reset;
     eval.InRenderSubrectDimensions.Width = inputs.Rect.Width();
     eval.InRenderSubrectDimensions.Height = inputs.Rect.Height();
     eval.InColorSubrectBase.X = inputs.Rect.MinX;
