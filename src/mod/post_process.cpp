@@ -31,8 +31,19 @@ namespace {
 
     LastCamera GLastCamera;
 
+    // teleports and fast travel dont always flag a camera cut, 20m in one frame is a jump not movement
+    constexpr float JumpDistance = 2000.0f;
+
+    float CameraMoveDistance(const FViewInfo& view) {
+        using namespace DirectX;
+
+        const XMFLOAT3& pvt = Field<XMFLOAT3>(&view, offset::View_ViewMatrices + offset::ViewMatrices_PreViewTranslation);
+
+        return XMVectorGetX(XMVector3Length(XMLoadFloat3(&pvt) - XMLoadFloat3(&GLastCamera.PreViewTranslation)));
+    }
+
     bool ShouldResetHistory(const FViewInfo& view) {
-        return !GLastCamera.Valid || Field<bool>(&view, offset::View_bCameraCut) || Field<void*>(&view, offset::View_ViewState) != GLastCamera.ViewState;
+        return !GLastCamera.Valid || Field<bool>(&view, offset::View_bCameraCut) || Field<void*>(&view, offset::View_ViewState) != GLastCamera.ViewState || CameraMoveDistance(view) > JumpDistance;
     }
 
     DirectX::XMFLOAT4X4 MakeClipToPrevClip(const FViewInfo& view, const ViewJitter* jitter, bool reset) {
@@ -91,7 +102,7 @@ namespace {
 
             // only log the first frame so a stuck camera cut cant spam the launcher
             if (inputs.Reset && !GLastReset) {
-                spdlog::info("post f{} dlss history reset, camera cut {}", GFrames, Field<bool>(&view, offset::View_bCameraCut));
+                spdlog::info("post f{} dlss history reset, camera cut {} moved {:.0f}", GFrames, Field<bool>(&view, offset::View_bCameraCut), CameraMoveDistance(view));
             }
 
             GLastReset = inputs.Reset;
@@ -101,8 +112,10 @@ namespace {
             if (inputs.Color && inputs.Depth) {
                 LoadRhiWork(&cmdList, [inputs] { RunDlssPass(inputs); });
 
-                // the forced TemporalAA just turns into fxaa in post, dlss already did the aa
-                Field<uint8_t>(&view, offset::View_AntiAliasingMethod) = AAM_None;
+                // the forced TemporalAA just turns into fxaa in post, only drop it while dlss is really doing the aa
+                if (IsDlssPassWorking()) {
+                    Field<uint8_t>(&view, offset::View_AntiAliasingMethod) = AAM_None;
+                }
             }
 
             if (inputs.Probe) {

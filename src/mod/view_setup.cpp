@@ -37,6 +37,9 @@ namespace {
             if (IsMainView(view)) {
                 // we need jittered projection for DLSS, thankfully they left some of that code in.
                 Field<uint8_t>(view, offset::View_AntiAliasingMethod) = AAM_TemporalAA;
+
+                // the velocity pass skips movers smaller than this on screen, dlss needs all of them
+                Field<float>(view, offset::View_MotionBlurPerObjectSize) = 0.0f;
             }
         }
 

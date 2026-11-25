@@ -36,6 +36,8 @@ namespace offset {
     constexpr size_t View_bIsGameView = 0x7E4;
     constexpr size_t View_bIsSceneCapture = 0x7E7;
     constexpr size_t View_bIsReflectionCapture = 0x808;
+    // FinalPostProcessSettings.MotionBlurPerObjectSize
+    constexpr size_t View_MotionBlurPerObjectSize = 0xB38;
     constexpr size_t View_AntiAliasingMethod = 0xB40;
     constexpr size_t View_ViewState = 0xD30;
     // FViewMatrices, offsets from View_ViewMatrices

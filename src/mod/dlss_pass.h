@@ -28,3 +28,6 @@ struct DlssPassInputs {
 
 // RHI thread onlyy
 void RunDlssPass(const DlssPassInputs& inputs);
+
+// any thread, true if the last pass got dlss onto scene color
+bool IsDlssPassWorking();
